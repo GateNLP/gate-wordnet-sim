@@ -288,23 +288,10 @@ public abstract class SimilarityMeasure
 	 */
 	public abstract double getSimilarity(Synset s1, Synset s2) throws JWNLException;
 
-	/**
-	 * Get the similarity between two words. The words can be specified either
-	 * as just the word or in an encoded form including the POS tag and possibly
-	 * the sense number, i.e. cat#n#1 would specifiy the 1st sense of the noun
-	 * cat.
-	 * @param w1 one of the words to compute similarity between.
-	 * @param w2 the other word to compute similarity between.
-	 * @return a SimilarityInfo instance detailing the similarity between the
-	 *         two words specified.
-	 * @throws JWNLException if an error occurs accessing WordNet.
-	 */
-	public final SimilarityInfo getSimilarity(String w1, String w2) throws JWNLException
-	{
-		//Get the (possibly) multiple synsets associated with each word
-		Set<Synset> ss1 = getSynsets(w1);
-		Set<Synset> ss2 = getSynsets(w2);
 
+	public final SimilarityInfo getSimilarity(String w1, String w2,
+											  Set<Synset> ss1, Set<Synset> ss2) throws JWNLException
+	{
 		//assume the words are not at all similar
 		SimilarityInfo sim = null;
 
@@ -330,13 +317,47 @@ public abstract class SimilarityMeasure
 	}
 
 	/**
+	 * Get the similarity between two words. The words can be specified either
+	 * as just the word or in an encoded form including the POS tag and possibly
+	 * the sense number, i.e. cat#n#1 would specifiy the 1st sense of the noun
+	 * cat.
+	 * @param w1 one of the words to compute similarity between.
+	 * @param w2 the other word to compute similarity between.
+	 * @return a SimilarityInfo instance detailing the similarity between the
+	 *         two words specified.
+	 * @throws JWNLException if an error occurs accessing WordNet.
+	 */
+	public final SimilarityInfo getSimilarity(String w1, String w2) throws JWNLException
+	{
+		//Get the (possibly) multiple synsets associated with each word
+		Set<Synset> ss1 = getSynsets(w1);
+		Set<Synset> ss2 = getSynsets(w2);
+
+		return getSimilarity(w1, w2, ss1, ss2);
+	}
+
+	/**
 	 * Finds all the synsets associated with a specific word.
-	 * @param word the word we are interested. Note that this may be encoded
+	 * @param word the word we are interested.
+	 *         Assumes that words may be encoded
 	 *        to include information on POS tag and sense index.
 	 * @return a set of synsets that are associated with the supplied word
 	 * @throws JWNLException if an error occurs accessing WordNet
 	 */
-	private final Set<Synset> getSynsets(String word) throws JWNLException
+	public final Set<Synset> getSynsets(String word) throws JWNLException {
+		return getSynsets(word, true);
+	}
+
+
+	/**
+	 * Finds all the synsets associated with a specific word.
+	 * @param word the word we are interested.
+	 * @param parseWords Assume that words may be encoded
+	 *        to include information on POS tag and sense index.
+	 * @return a set of synsets that are associated with the supplied word
+	 * @throws JWNLException if an error occurs accessing WordNet
+	 */
+	public final Set<Synset> getSynsets(String word, boolean parseWords) throws JWNLException
 	{
 		//get a handle on the WordNet dictionary
 		Dictionary dict = Dictionary.getInstance();
@@ -351,44 +372,36 @@ public abstract class SimilarityMeasure
 		//if the word is in the domainMappings then simply return the mappings
 		if (domainMappings.containsKey(data[0])) return domainMappings.get(data[0]);
 
-		if (data.length == 1)
-		{
+		if (!parseWords || data.length == 1) {
 			//if there is just the word
-
 			for (IndexWord iw : dict.lookupAllIndexWords(data[0]).getIndexWordArray())
 			{
 				//for each matching word in WordNet add all it's senses to
 				//the set we are building up
 				synsets.addAll(Arrays.asList(iw.getSenses()));
 			}
+		} else {
 
-			//we have finished so return the synsets we found
-			return synsets;
+			//the calling method specified a POS tag as well so get that
+			POS pos = POS.getPOSForKey(data[1]);
+
+			//if the POS tag isn't valid throw an exception
+			if (pos == null) throw new JWNLException("Invalid POS Tag: " + data[1]);
+
+			//get the word with the specified POS tag from WordNet
+			IndexWord iw = dict.getIndexWord(pos, data[0]);
+
+			if (data.length > 2) {
+				//if the calling method specified a sense index then
+				//add just that sysnet to the set we are creating
+				synsets.add(iw.getSense(Integer.parseInt(data[2])));
+			} else {
+				//no sense index was specified so add all the senses of
+				//the word to the set we are creating
+				synsets.addAll(Arrays.asList(iw.getSenses()));
+			}
 		}
 
-		//the calling method specified a POS tag as well so get that
-		POS pos = POS.getPOSForKey(data[1]);
-
-		//if the POS tag isn't valid throw an exception
-		if (pos == null) throw new JWNLException("Invalid POS Tag: " + data[1]);
-
-		//get the word with the specified POS tag from WordNet
-		IndexWord iw = dict.getIndexWord(pos, data[0]);
-
-		if (data.length > 2)
-		{
-			//if the calling method specified a sense index then
-			//add just that sysnet to the set we are creating
-			synsets.add(iw.getSense(Integer.parseInt(data[2])));
-		}
-		else
-		{
-			//no sense index was specified so add all the senses of
-			//the word to the set we are creating
-			synsets.addAll(Arrays.asList(iw.getSenses()));
-		}
-
-		//return the set of synsets we found for the specified word
 		return synsets;
 	}
 

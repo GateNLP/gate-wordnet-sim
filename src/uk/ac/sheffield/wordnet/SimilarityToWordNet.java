@@ -29,8 +29,9 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
     @Override
     public void execute() throws ExecutionException {
         //create the similarity measure
+        SimilarityMeasure sim;
         try {
-            SimilarityMeasure sim = SimilarityMeasure.newInstance(getSimParams());
+            sim = SimilarityMeasure.newInstance(getSimParams());
         } catch (IOException e) {
             throw new ExecutionException(e);
         }
