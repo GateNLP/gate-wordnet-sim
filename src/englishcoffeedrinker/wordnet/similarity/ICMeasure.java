@@ -30,6 +30,7 @@ import net.didion.jwnl.data.PointerUtils;
 import net.didion.jwnl.data.Synset;
 import net.didion.jwnl.data.Word;
 import net.didion.jwnl.data.list.PointerTargetNode;
+import org.omg.SendingContext.RunTime;
 
 /**
  * An abstract class that adds information content based methods to the
@@ -45,18 +46,27 @@ public abstract class ICMeasure extends PathMeasure
 	 */
 	private Map<String, Double> freq = new HashMap<String, Double>();
 
-	protected void config(Map<String, String> params) throws Exception
-	{
-		super.config(params);
+	protected void config(Map<String, String> params) throws IOException {
+		super.config(Boolean.parseBoolean(params.remove("root")));
 
+		loadInfoContent(params.remove("infocontent"),
+				params.get("encoding"));
+	}
+
+	/**
+	 * Loads the supplied infocontent file into this similarity measure.
+	 * @param infoContent The file to use.
+	 * @param encoding The encoding of the file - will default to UTF-8 if null.
+	 * @throws IOException IF the file couldn't be loaded or the file version doesn't math wordnet version
+	 */
+	public void loadInfoContent(String infoContent, String encoding) throws IOException {
 		//a handle to the infocontent file
 		BufferedReader in = null;
 
 		try
 		{
-			URL url = new URL(params.remove("infocontent"));
-			
-			String encoding = params.get("encoding");
+			URL url = new URL(infoContent);
+
 			if (encoding == null) encoding = "UTF-8";
 
 			//open the info content file for reading
@@ -70,7 +80,7 @@ public abstract class ICMeasure extends PathMeasure
 
 			//Check that the IC file is meant for use with the version
 			//of WordNet we are currently using
-			if (!line.endsWith("::" + JWNL.getVersion().getNumber())) throw new Exception("InfoContent file version doesn't match WordNet version");
+			if (!line.endsWith("::" + JWNL.getVersion().getNumber())) throw new IOException("InfoContent file version doesn't match WordNet version");
 
 			//Initially set the IC values of the noun and verb roots to 0
 			freq.put("n", 0d);
@@ -110,7 +120,9 @@ public abstract class ICMeasure extends PathMeasure
 			//if we managed to open the file then close it
 			if (in != null) in.close();
 		}
+
 	}
+
 
 	/**
 	 * Generates the key to access the frequency count data loaded

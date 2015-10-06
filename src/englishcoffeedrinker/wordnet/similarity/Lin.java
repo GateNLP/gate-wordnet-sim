@@ -30,9 +30,9 @@ public class Lin extends ICMeasure
 	 * Instances of this similarity measure should be generated using the
 	 * factory methods of {@link SimilarityMeasure}.
 	 */
-	protected Lin()
+	public Lin()
 	{
-		//A protected constructor to force the use of the newInstance method
+		// Don't force the use of newInstance.
 	}
 
 	@Override

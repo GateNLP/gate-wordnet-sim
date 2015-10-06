@@ -13,6 +13,7 @@
 package englishcoffeedrinker.wordnet.similarity;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Arrays;
@@ -98,10 +99,9 @@ public abstract class SimilarityMeasure
 	 * @param params a set of key-value pairs that are used to configure
 	 *        the similarity measure. See concrete implementations for details
 	 *        of expected/possible parameters.
-	 * @throws Exception if an error occurs while configuring the similarity
-	 *         measure.
+	 * @throws IOException if a configuration file cannot be loaded.
 	 */
-	protected abstract void config(Map<String, String> params) throws Exception;
+	protected abstract void config(Map<String, String> params) throws IOException;
 
 	/**
 	 * Create a new instance of a similarity measure.
@@ -172,88 +172,108 @@ public abstract class SimilarityMeasure
 	 * @param params a set of key-value pairs which define the similarity
 	 *        measure.
 	 * @return the newly created similarity measure.
-	 * @throws Exception if an error occurs while creating the similarity
-	 *         measure.
+	 * @throws IllegalArgumentException if invalid similarity measure was specified as a parameter.
+	 * @throws IOException if the wordnet configuration file could not be read.
+	 * @throws RuntimeException if the additional mappings could not be added to the wordnet database.
 	 */
-	public static SimilarityMeasure newInstance(Map<String, String> params) throws Exception
-	{
+	public static SimilarityMeasure newInstance(Map<String, String> params) throws IllegalArgumentException,
+			IOException {
 		//get the class name of the implementation we need to load
 		String name = params.remove("simType");
 
 		//if the name hasn't been specified then throw an exception
-		if (name == null) throw new Exception("Must specifiy the similarity measure to use");
+		if (name == null) throw new IllegalArgumentException("Must specify the similarity measure to use");
 
 		//Get hold of the class we need to load
-		@SuppressWarnings("unchecked") Class<SimilarityMeasure> c = (Class<SimilarityMeasure>) Class.forName(name);
-
-		//create a new instance of the similarity measure
-		SimilarityMeasure sim = c.newInstance();
-
-		//get the cache parameter from the config params
-		String cSize = params.remove("cache");
-
-		//if a cache size was specified then set it
-		if (cSize != null) sim.cacheSize = Integer.parseInt(cSize);
-
-		//get the url of the domain mapping file
-		String mapURL = params.remove("mapping");
-		
-		String encoding = params.get("encoding");
-		if (encoding == null) encoding = "UTF-8";
-
-		if (mapURL != null)
-		{
-			//if a mapping file has been provided then 
-
-			//open a reader over the file
-			BufferedReader in = null;
-
-			try
-			{
-				in = new BufferedReader(new InputStreamReader((new URL(mapURL)).openStream(), encoding));
-
-				//get the first line ready for processing
-				String line = in.readLine();
-
-				while (line != null)
-				{
-					if (!line.startsWith("#"))
-					{
-						//if the line isn't a comment (i.e. it doesn't start with #) then...
-
-						//split the line at the white space
-						String[] data = line.trim().split("\\s+");
-
-						//create a new set to hold the mapped synsets
-						Set<Synset> mappedTo = new HashSet<Synset>();
-
-						for (int i = 1; i < data.length; ++i)
-						{
-							//for each synset mapped to get the actual Synsets
-							//and store them in the set
-							mappedTo.addAll(sim.getSynsets(data[i]));
-						}
-
-						//if we have found some actual synsets then
-						//store them in the domain mappings
-						if (mappedTo.size() > 0) sim.domainMappings.put(data[0], mappedTo);
-					}
-
-					//get the next line from the file
-					line = in.readLine();
-				}
-			}
-			finally
-			{
-				if (in != null) in.close();
-			}
+		SimilarityMeasure sim;
+		try {
+			@SuppressWarnings("unchecked") Class<SimilarityMeasure> c = (Class<SimilarityMeasure>) Class.forName(name);
+			//create a new instance of the similarity measure
+			sim = c.newInstance();
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException("Could not find class supplied by name for similarity measure.",e);
+		} catch (InstantiationException e) {
+			throw new IllegalArgumentException("Could not instantiate class for similarity measure", e);
+		} catch (IllegalAccessException e) {
+			throw new IllegalArgumentException("Couldn't access class for similarity measure.", e);
 		}
 
-		//make sure it is configured properly
-		sim.config(params);
+		// Set the size of the cache for the similarity measure
+		String cSizeString = params.remove("cache");
+		if (cSizeString != null) sim.cacheSize = Integer.parseInt(cSizeString);
 
-		//then return it
+		// Load any mapping file that might have been supplied.
+		String mapUrl = params.remove("mapping");
+		if (mapUrl != null) {
+			sim.loadMappings(mapUrl, params.remove("encoding"));
+		}
+
+		// Pass on any additional configuration to similarity measure.
+		sim.config(params);
 		return sim;
+	}
+
+	/**
+	 * Loads the wordnet mappings supplied into a SimilarityMeasure instance.
+	 * @param mapURL Location of the mapping file to use.
+	 * @param encoding The encoding of the mapping file. Supply null for UTF-8
+	 * @return the newly created similarity measure.
+	 * @throws IllegalArgumentException if invalid similarity measure was specified as a parameter.
+	 * @throws IOException if the wordnet configuration file could not be read.
+	 * @throws RuntimeException if the additional mappings could not be added to the wordnet database.
+	 */
+	public void loadMappings(String mapURL, String encoding) throws  IOException
+	{
+		//if a cache size was specified then set it
+		if (encoding == null) encoding = "UTF-8";
+
+		//if a mapping file has been provided then
+		//open a reader over the file
+		BufferedReader in = null;
+
+		try
+		{
+			in = new BufferedReader(new InputStreamReader((new URL(mapURL)).openStream(), encoding));
+
+			//get the first line ready for processing
+			String line = in.readLine();
+
+			while (line != null)
+			{
+				if (!line.startsWith("#"))
+				{
+					//if the line isn't a comment (i.e. it doesn't start with #) then...
+
+					//split the line at the white space
+					String[] data = line.trim().split("\\s+");
+
+					//create a new set to hold the mapped synsets
+					Set<Synset> mappedTo = new HashSet<Synset>();
+
+					for (int i = 1; i < data.length; ++i)
+					{
+						//for each synset mapped to get the actual Synsets
+						//and store them in the set
+						try {
+							mappedTo.addAll(getSynsets(data[i]));
+						} catch (JWNLException e) {
+							throw new RuntimeException("Could not add mappings to the wordnet database", e);
+						}
+					}
+
+					//if we have found some actual synsets then
+					//store them in the domain mappings
+					if (mappedTo.size() > 0) domainMappings.put(data[0], mappedTo);
+				}
+
+				//get the next line from the file
+				line = in.readLine();
+			}
+		}
+		finally
+		{
+			if (in != null) in.close();
+		}
 	}
 
 	/**
@@ -371,4 +391,6 @@ public abstract class SimilarityMeasure
 		//return the set of synsets we found for the specified word
 		return synsets;
 	}
+
+
 }

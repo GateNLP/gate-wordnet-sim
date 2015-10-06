@@ -12,6 +12,7 @@
 
 package englishcoffeedrinker.wordnet.similarity;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -41,11 +42,14 @@ public abstract class PathMeasure extends SimilarityMeasure
 		return root;
 	}
 
-	protected void config(Map<String, String> params) throws Exception
+	protected void config(Map<String, String> params) throws IOException
 	{
 		//A protected constructor to force the use of the newInstance method
-
 		if (params.containsKey("root")) root = Boolean.parseBoolean(params.remove("root"));
+	}
+
+	protected void config(boolean root) {
+		root = root;
 	}
 
 	/**

@@ -1,4 +1,4 @@
-<project basedir="." default="jar" name="JWordNetSim">
+<project basedir="." default="jar" name="gate-wordnet-sim">
 	<description>
 		A pure Java package implementing a number of the popular WordNet
 		similarity measures.
@@ -21,7 +21,7 @@
 	<property name="test-classes" location="test/classes" />
 	<property name="test-reports" location="test/reports" />
 
-	<property name="jar.file" value="JWordNetSim.jar" />
+	<property name="jar.file" value="gate-wordnet-sim" />
 
 	<target name="prepare-compile">
 		<uptodate property="do.not.build">
@@ -131,16 +131,16 @@
 		</zip>
 	</target>
 
-	<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" />
-	<target name="findbugs" depends="jar">
-		<findbugs home="${findbugs.home}" jvmargs="-Xmx512M" failonerror="true" output="xml:withMessages" outputFile="findbugs.xml">
-			<auxclasspath>
-				<fileset dir="${lib}">
-					<include name="*.jar" />
-				</fileset>
-			</auxclasspath>
-			<sourcePath path="${basedir}/src/" />
-			<class location="${jar.file}" />
-		</findbugs>
-	</target>
+	<!--<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" />-->
+	<!--<target name="findbugs" depends="jar">-->
+		<!--<findbugs home="${findbugs.home}" jvmargs="-Xmx512M" failonerror="true" output="xml:withMessages" outputFile="findbugs.xml">-->
+			<!--<auxclasspath>-->
+				<!--<fileset dir="${lib}">-->
+					<!--<include name="*.jar" />-->
+				<!--</fileset>-->
+			<!--</auxclasspath>-->
+			<!--<sourcePath path="${basedir}/src/" />-->
+			<!--<class location="${jar.file}" />-->
+		<!--</findbugs>-->
+	<!--</target>-->
 </project>

@@ -25,6 +25,8 @@ import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import englishcoffeedrinker.wordnet.similarity.ICMeasure;
+import englishcoffeedrinker.wordnet.similarity.Lin;
 import net.didion.jwnl.JWNL;
 import net.didion.jwnl.data.IndexWord;
 import net.didion.jwnl.data.POS;
@@ -51,27 +53,34 @@ public class TestLin
 		//and create a similarity measure otherwise nasty things
 		//might happen!
 		JWNL.initialize(new FileInputStream("test/wordnet.xml"));
-		
-		//Create a map to hold the similarity config params
-		Map<String,String> params = new HashMap<String,String>();
-		
-		//the simType parameter is the class name of the measure to use
-		params.put("simType","englishcoffeedrinker.wordnet.similarity.Lin");
-		
-		//this param should be the URL to an infocontent file (if required
-		//by the similarity measure being loaded)
-		params.put("infocontent","file:test/ic-bnc-resnik-add1.dat");
-		
-		//this param should be the URL to a mapping file if the
-		//user needs to make synset mappings
-		params.put("mapping","file:test/domain_independent.txt");
-		
-		//set the encoding of the two input files
-		params.put("encoding", "us-ascii");
-		
+
+//
+//		//Create a map to hold the similarity config params
+//		Map<String,String> params = new HashMap<String,String>();
+//
+//		//the simType parameter is the class name of the measure to use
+//		params.put("simType","englishcoffeedrinker.wordnet.similarity.Lin");
+//
+//		//this param should be the URL to an infocontent file (if required
+//		//by the similarity measure being loaded)
+//		params.put("infocontent","file:test/ic-bnc-resnik-add1.dat");
+//
+//		//this param should be the URL to a mapping file if the
+//		//user needs to make synset mappings
+//		params.put("mapping","file:test/domain_independent.txt");
+//
+//		//set the encoding of the two input files
+//		params.put("encoding", "us-ascii");
+//
+//      	sim = Lin.newInstance(params);
+
 		//create the similarity measure
-		sim = SimilarityMeasure.newInstance(params);
-		
+		Lin sim = new Lin();
+
+		sim.loadMappings("file:test/domain_independent.txt", "us-ascii");
+		sim.loadInfoContent("file:test/ic-bnc-resnik-add1.dat", "us-ascii");
+
+		TestLin.sim = sim;
 	}
 	
 	@Test
