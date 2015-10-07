@@ -1,21 +1,31 @@
 package uk.ac.sheffield.wordnet;
 
+import englishcoffeedrinker.wordnet.similarity.JCn;
+import englishcoffeedrinker.wordnet.similarity.SimilarityInfo;
 import englishcoffeedrinker.wordnet.similarity.SimilarityMeasure;
 import gate.*;
 import gate.creole.AbstractLanguageAnalyser;
+import gate.creole.ResourceInstantiationException;
 import gate.creole.metadata.CreoleParameter;
 import gate.creole.metadata.CreoleResource;
 import gate.creole.metadata.RunTime;
 import gate.creole.metadata.Optional;
 import gate.creole.ExecutionException;
+import net.didion.jwnl.JWNL;
+import net.didion.jwnl.JWNLException;
+import net.didion.jwnl.data.Synset;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 
-@CreoleResource(name = "Similarity to WordNet sense", comment = "Calculates the maximum similarity from each token to a given sense in WordNet")
+@CreoleResource(name = "WordNet Sense Similarity", comment = "Calculates the maximum similarity from each token to a given sense in WordNet")
 /**
  * Calculates the maximum distance from each token to a given sense in WordNet
  *  @author Dominic Rout
@@ -25,7 +35,20 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         ProcessingResource {
 
 
-    @SuppressWarnings("unchecked")
+    @Override
+    public Resource init() throws ResourceInstantiationException {
+        try {
+            JWNL.initialize(wordnetConfig.openStream());
+        } catch (IOException e) {
+            throw new ResourceInstantiationException("Couldn't find or read WordNet configuration file",e);
+        } catch (JWNLException e) {
+            throw new ResourceInstantiationException("Couldn't initialise JWNL to read wordnet database", e);
+        }
+
+        return super.init();
+    }
+
+        @SuppressWarnings("unchecked")
     @Override
     public void execute() throws ExecutionException {
         //create the similarity measure
@@ -37,42 +60,62 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         }
 
         AnnotationSet inputSet = document.getAnnotations(inputAS);
+        try {
 
-//        for (Annotation token : inputSet.get(tokenType)) {
-//            String tokenText = (String) token.getFeatures().get(textFeature);
-//
-//            Collection<Concept> tokenConcepts = db.getAllConcepts(tokenText, "n"); // only interested in nouns
-//
-//            double maxSimilarity = 0;
-//
-//            // We only care about the sense with the highest similarity.
-//            for (Concept c1 : tokenConcepts) {
-//                double similarity = calculator.calcRelatednessOfSynset(c1, c).getScore();
-//
-//                if (similarity > maxSimilarity) { maxSimilarity = similarity; }
-//            }
-//
-//            token.getFeatures().put(outputFeature, maxSimilarity);
-//        }
+            Set<Synset> targetSynsets = sim.getSynsets(targetSynset);
+
+            for (Annotation token : inputSet.get(tokenType)) {
+                String tokenText = (String) token.getFeatures().get(textFeature);
+
+                Set<Synset> tokenSynsets = sim.getSynsets(tokenText, false);
+                // Only try to calculate similarity for tokens that are in wordnet
+                if (tokenSynsets.size() != 0) {
+                    SimilarityInfo similarity = sim.getSimilarity(tokenText, targetSynset, tokenSynsets, targetSynsets);
+
+                    token.getFeatures().put(outputFeature, similarity.getSimilarity());
+                } else {
+                    // Default to 0 if the word is not in WordNet.
+                    // NB that some measures cannot ordinarily produce 0 scores.
+                    token.getFeatures().put(outputFeature, 0);
+                }
+            }
+        } catch (JWNLException e) {
+            e.printStackTrace();
+        }
     }
 
-    private Map<String, String> getSimParams() {
+    private Map<String, String> getSimParams() throws ExecutionException {
         //Create a map to hold the similarity config params
         Map<String,String> params = new HashMap<String,String>();
 
         //the simType parameter is the class name of the measure to use
-        params.put("simType","englishcoffeedrinker.wordnet.similarity.Lin");
+        params.put("simType",simType.toClassName());
 
         //this param should be the URL to an infocontent file (if required
         //by the similarity measure being loaded)
-        params.put("infocontent","file:test/ic-bnc-resnik-add1.dat");
+        if (infoContentFileName != null) {
+            try {
+                params.put("infocontent", infoContentFileName.toURI().toString());
 
-        //this param should be the URL to a mapping file if the
-        //user needs to make synset mappings
-        params.put("mapping","file:test/domain_independent.txt");
+            } catch (URISyntaxException e) {
+                throw new ExecutionException("URL supplied for infocontent file is not valid");
+            }
+        } else if (simType == SimilarityTypeEnum.LIN || simType == SimilarityTypeEnum.JCN) {
+            throw new ExecutionException("Infocontent file is required for the selected similarity measure.");
+        }
 
+        if (mappingFileName != null) {
+            //this param should be the URL to a mapping file if the
+            //user needs to make synset mappings
+            try {
+                System.out.println(mappingFileName.toURI().toString());
+                params.put("mapping", mappingFileName.toURI().toString());
+            } catch (URISyntaxException e) {
+                throw new ExecutionException("URL supplied for mapping file is not valid");
+            }
+        }
         //set the encoding of the two input files
-        params.put("encoding", "us-ascii");
+        params.put("encoding", mappingInfoContentEncoding);
 
         return params;
     }
@@ -85,6 +128,14 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
     private String textFeature;
     private String outputFeature;
     private String targetSynset;
+
+    private SimilarityTypeEnum simType;
+    private URL infoContentFileName;
+    private URL mappingFileName;
+    private String mappingInfoContentEncoding;
+
+    private URL wordnetConfig;
+
 
     public String getInputAS() {
         return inputAS;
@@ -137,5 +188,51 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         this.targetSynset = targetSynset;
     }
 
+    public SimilarityTypeEnum getSimType() {
+        return simType;
+    }
 
+    @RunTime
+    @CreoleParameter(comment = "The kind of similarity measure to use", defaultValue = "LIN")
+    public void setSimType(SimilarityTypeEnum simType) {
+        this.simType = simType;
+    }
+
+    public URL getInfoContentFileName() {
+        return infoContentFileName;
+    }
+    @Optional
+    @CreoleParameter(comment = "The file containing the information content description to use")
+    public void setInfoContentFileName(URL infoContentFileName) {
+        this.infoContentFileName = infoContentFileName;
+    }
+
+    public URL getMappingFileName() {
+        return mappingFileName;
+    }
+
+    @Optional
+    @CreoleParameter(comment = "File containing additional mappings for wordnet")
+    public void setMappingFileName(URL mappingFileName) {
+        this.mappingFileName = mappingFileName;
+    }
+
+    public String getMappingInfoContentEncoding() {
+        return mappingInfoContentEncoding;
+    }
+
+    @CreoleParameter(comment = "Encoding for the information content and  mappings files", defaultValue = "utf-8")
+    public void setMappingInfoContentEncoding(String mappingInfoContentEncoding) {
+        this.mappingInfoContentEncoding = mappingInfoContentEncoding;
+    }
+
+
+    public URL getWordnetConfig() {
+        return wordnetConfig;
+    }
+
+    @CreoleParameter(comment = "Location of the wordnet configuration file")
+    public void setWordnetConfig(URL wordnetConfig) {
+        this.wordnetConfig = wordnetConfig;
+    }
 }

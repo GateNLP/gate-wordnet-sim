@@ -29,7 +29,7 @@ public class JCn extends ICMeasure
 	 * Instances of this similarity measure should be generated using the
 	 * factory methods of {@link SimilarityMeasure}.
 	 */
-	protected JCn()
+	public JCn()
 	{
 		//A protected constructor to force the use of the newInstance method
 	}

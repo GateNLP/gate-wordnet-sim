@@ -94,7 +94,17 @@ public class TestLin
 		//and get the similarity between the first senses of each word	
 		assertEquals(0.8545616551173522, sim.getSimilarity(word1.getSense(1), word2.getSense(1)), 0.00001);
 	}
-	
+
+	@Test
+	public void tesMelbourneOrganization() throws Exception {
+		SimilarityInfo info = sim.getSimilarity("melbourne","organization");
+
+		assertNotNull(info);
+
+		assertEquals(-0.0, info.getSimilarity(), 0.00001);
+
+	}
+
 	@Test
 	public void testStrings() throws Exception {
 		//get similarity using the string methods (note this also makes use

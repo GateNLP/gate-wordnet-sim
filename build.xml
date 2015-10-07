@@ -21,7 +21,7 @@
 	<property name="test-classes" location="test/classes" />
 	<property name="test-reports" location="test/reports" />
 
-	<property name="jar.file" value="gate-wordnet-sim" />
+	<property name="jar.file" value="gate-wordnet-sim.jar" />
 
 	<target name="prepare-compile">
 		<uptodate property="do.not.build">
