@@ -49,7 +49,7 @@ public abstract class PathMeasure extends SimilarityMeasure
 	}
 
 	protected void config(boolean root) {
-		root = root;
+		this.root = root;
 	}
 
 	/**
