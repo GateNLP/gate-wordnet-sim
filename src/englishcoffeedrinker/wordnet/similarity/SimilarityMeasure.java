@@ -359,6 +359,11 @@ public abstract class SimilarityMeasure
 	 */
 	public final Set<Synset> getSynsets(String word, boolean parseWords) throws JWNLException
 	{
+		// Don't try to find Synsets for empty strings.
+		if (word.isEmpty()) {
+			return new HashSet<Synset>();
+		}
+
 		//get a handle on the WordNet dictionary
 		Dictionary dict = Dictionary.getInstance();
 
@@ -369,18 +374,21 @@ public abstract class SimilarityMeasure
 		//up to three components that could be present: word, POS tag, sense index
 		String[] data = word.split("#");
 
-		//if the word is in the domainMappings then simply return the mappings
-		if (domainMappings.containsKey(data[0])) return domainMappings.get(data[0]);
-
+		// If we're not splitting anything, or there was nothing to split, deal with the word itself.
 		if (!parseWords || data.length == 1) {
-			//if there is just the word
-			for (IndexWord iw : dict.lookupAllIndexWords(data[0]).getIndexWordArray())
+			//if the word is in the domainMappings then simply return the mappings
+			if (domainMappings.containsKey(word)) return domainMappings.get(word);
+
+			// Look up the word in the index.
+			for (IndexWord iw : dict.lookupAllIndexWords(word).getIndexWordArray())
 			{
 				//for each matching word in WordNet add all it's senses to
 				//the set we are building up
 				synsets.addAll(Arrays.asList(iw.getSenses()));
 			}
-		} else {
+		} else { // Word is a POS expression and must be split.
+			//if the word is in the domainMappings then simply return the mappings
+			if (domainMappings.containsKey(data[0])) return domainMappings.get(data[0]);
 
 			//the calling method specified a POS tag as well so get that
 			POS pos = POS.getPOSForKey(data[1]);
