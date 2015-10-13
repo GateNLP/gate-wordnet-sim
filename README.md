@@ -1,9 +1,14 @@
 Java WordNet Similarity v1.0.1
+
 Copyright (C) 2006-2007, The University of Sheffield
+
 Copyright (C) 2011-2012, Mark A. Greenwood
+
 Developed by Mark A. Greenwood <m.greenwood@dcs.shef.ac.uk>
 
-=======================================================================
+And Dominic P. Rout <d.rout@sheffield.ac.uk>
+
+
 COPYRIGHT AND WARRANTY INFORMATION
 =======================================================================
 
@@ -22,7 +27,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-=======================================================================
 DESCRIPTION
 =======================================================================
 
@@ -31,15 +35,14 @@ known WordNet based similarity measures. It was developed as an
 alternative to the popular perl WordNet::Similarity package and should
 produce identical results. See the JavaDoc files for more information.
 
-=======================================================================
 OBTAINING THE SOFTWARE
 =======================================================================
 
 This library is available by following the appropriate links from
+
     http://nlp.shef.ac.uk/result/software.html
 
 
-=======================================================================
 SOFTWARE REQUIREMENTS
 =======================================================================
 
