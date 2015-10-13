@@ -1,4 +1,4 @@
 <CREOLE-DIRECTORY>
     <JAR SCAN="true">gate-wordnet-sim.jar</JAR>
-
+    <JAR>lib/jwnl.jar</JAR>
 </CREOLE-DIRECTORY>

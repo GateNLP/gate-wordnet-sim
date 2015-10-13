@@ -1,6 +1,7 @@
 package uk.ac.sheffield.wordnet;
 
 import englishcoffeedrinker.wordnet.similarity.JCn;
+import englishcoffeedrinker.wordnet.similarity.Lin;
 import englishcoffeedrinker.wordnet.similarity.SimilarityInfo;
 import englishcoffeedrinker.wordnet.similarity.SimilarityMeasure;
 import gate.*;
@@ -24,10 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 
 @CreoleResource(name = "WordNet Sense Similarity", comment = "Calculates the maximum similarity from each token to a given sense in WordNet")
 /**
- * Calculates the maximum distance from each token to a given sense in WordNet
+ * Calculates the maximum similarity from each token to a given sense in WordNet
  *  @author Dominic Rout
  *
  */
@@ -48,9 +52,21 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         return super.init();
     }
 
-        @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
     @Override
     public void execute() throws ExecutionException {
+
+//        runSimpleTest();
+//
+//        try {
+//            JWNL.initialize(wordnetConfig.openStream());
+//        } catch (IOException e) {
+//            throw new ExecutionException("Couldn't find or read WordNet configuration file",e);
+//        } catch (JWNLException e) {
+//            throw new ExecutionException("Couldn't initialise JWNL to read wordnet database", e);
+//        }
+//
+
         //create the similarity measure
         SimilarityMeasure sim;
         try {
@@ -118,6 +134,29 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         params.put("encoding", mappingInfoContentEncoding);
 
         return params;
+    }
+
+    public void runSimpleTest() throws ExecutionException {
+        try {
+            JWNL.initialize(new FileInputStream("/home/dominic/Repositories/gate-wordnet-sim/test/wordnet.xml"));
+
+            Lin sim = new Lin();
+
+
+            sim.loadMappings("file:/home/dominic/Repositories/gate-wordnet-sim/test/domain_independent.txt", "us-ascii");
+            sim.loadInfoContent("file:/home/dominic/Repositories/gate-wordnet-sim/test/ic-bnc-resnik-add1.dat", "us-ascii");
+
+            SimilarityInfo info = sim.getSimilarity("melbourne","organization");
+
+            assertNotNull(info);
+
+            assertEquals(-0.0, info.getSimilarity(), 0.00001);
+
+        } catch (Exception e) {
+            throw new ExecutionException(e);
+        }
+
+
     }
 
     /**
