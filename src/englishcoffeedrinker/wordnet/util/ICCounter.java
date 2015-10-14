@@ -1,5 +1,6 @@
 package englishcoffeedrinker.wordnet.util;
 
+import net.didion.jwnl.JWNL;
 import net.didion.jwnl.JWNLException;
 import net.didion.jwnl.data.*;
 import net.didion.jwnl.data.list.PointerTargetNode;
@@ -8,6 +9,7 @@ import net.didion.jwnl.data.list.PointerTargetTree;
 import net.didion.jwnl.dictionary.Dictionary;
 import net.didion.jwnl.dictionary.file.DictionaryCatalog;
 
+import java.io.PrintWriter;
 import java.util.*;
 
 /**
@@ -16,7 +18,6 @@ import java.util.*;
  * Created by Dominic Rout on 13/10/15.
  */
 public class ICCounter {
-
     private static String[] POS_TAGS = {"n", "v"};
     private static int MAX_COMPOUND_WORDS = 3;
     private final Dictionary dictionary;
@@ -34,6 +35,13 @@ public class ICCounter {
         this.resnik = resnik;
         pointerUtils = PointerUtils.getInstance();
         dictionary = Dictionary.getInstance();
+
+        offsetFreqMap = new TreeMap<String, HashMap<Long, Float>>();
+
+        for (String pos_tag : POS_TAGS) {
+            offsetFreqMap.put(pos_tag, new HashMap<Long, Float>());
+        }
+
         loadCompounds();
     }
 
@@ -75,18 +83,22 @@ public class ICCounter {
             // Find synsets for the word from the dictionary.
             IndexWord indexWord = dictionary.getIndexWord(pos, word);
 
-            long[] offsets = indexWord.getSynsetOffsets();
+            if (indexWord != null) {
+                long[] offsets = indexWord.getSynsetOffsets();
 
-            for (long offset : offsets) {
+                for (long offset : offsets) {
 
-                // Initialise the offset to zero in the map if needed because Java is ridiculous.
-                if (!offsetFreqMap.containsKey(offset)) { offsetMap.put(offset, 0f); }
+                    // Initialise the offset to zero in the map if needed because Java is ridiculous.
+                    if (!offsetMap.containsKey(offset)) {
+                        offsetMap.put(offset, 0f);
+                    }
 
-                if (resnik) {
-                    // Spread the value over all senses by dividing by the number of senses.
-                    offsetMap.put(offset, offsetMap.get(offset) + (1.0f / offsets.length));
-                } else {
-                    offsetMap.put(offset, offsetMap.get(offset) + 1.0f);
+                    if (resnik) {
+                        // Spread the value over all senses by dividing by the number of senses.
+                        offsetMap.put(offset, offsetMap.get(offset) + (1.0f / offsets.length));
+                    } else {
+                        offsetMap.put(offset, offsetMap.get(offset) + 1.0f);
+                    }
                 }
             }
         }
@@ -117,7 +129,7 @@ public class ICCounter {
                 // Only start with root nodes.
                 if (pointerUtils.getDirectHypernyms(synset).isEmpty()) {
                     float frequency = _propagateFrequency(synset, offsetMap, resultOffsetMap);
-                    resultOffsetMap.put(0l, resultOffsetMap.get(0) + frequency);
+                    resultOffsetMap.put(0l, resultOffsetMap.get(0l) + frequency);
                 }
             }
 
@@ -191,7 +203,7 @@ public class ICCounter {
 
         for (String pos_tag : POS_TAGS) {
             // Find words for the pos tag.
-            Iterator indexWordIterator = dictionary.getIndexWordIterator(POS.getPOSForLabel(pos_tag));
+            Iterator indexWordIterator = dictionary.getIndexWordIterator(POS.getPOSForKey(pos_tag));
             while (indexWordIterator.hasNext()) {
                 // Get the actual index term.
                 IndexWord term = (IndexWord) indexWordIterator.next();
@@ -250,5 +262,32 @@ public class ICCounter {
         }
 
         return result;
+    }
+
+    /**
+     * Prints the IC counts to the supplied data file in the format required for the library.
+     * @param output
+     */
+    public void export(PrintWriter output) throws JWNLException {
+        // Print a current version number
+        output.format("wnver::%f\n", JWNL.getVersion().getNumber());
+
+        // Output one POS tag at a time
+        for (Map.Entry<String, HashMap<Long, Float>> posFreqMapEntry : offsetFreqMap.entrySet()) {
+            String posTag = posFreqMapEntry.getKey();
+            POS pos = POS.getPOSForKey(posTag);
+
+            // Iterate through all of the words in this dictionary.
+            for (Map.Entry<Long, Float> wordFreqEntry : posFreqMapEntry.getValue().entrySet()) {
+                long offset = wordFreqEntry.getKey();
+                Synset synset = dictionary.getSynsetAt(pos, offset);
+
+                output.format("%d%s %f %s\n",
+                        wordFreqEntry.getKey(),
+                        posTag,
+                        wordFreqEntry.getValue(),
+                        pointerUtils.getDirectHypernyms(synset).isEmpty() ? "ROOT" : "");
+            }
+        }
     }
 }
