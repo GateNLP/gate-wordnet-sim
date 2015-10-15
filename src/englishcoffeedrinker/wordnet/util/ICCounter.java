@@ -87,7 +87,6 @@ public class ICCounter {
                 long[] offsets = indexWord.getSynsetOffsets();
 
                 for (long offset : offsets) {
-
                     // Initialise the offset to zero in the map if needed because Java is ridiculous.
                     if (!offsetMap.containsKey(offset)) {
                         offsetMap.put(offset, 0f);
@@ -133,7 +132,7 @@ public class ICCounter {
                 }
             }
 
-            offsetMap = resultOffsetMap;
+            offsetFreqMap.put(posString, resultOffsetMap);
         }
     }
 
@@ -173,12 +172,15 @@ public class ICCounter {
         long offset = synset.getOffset();
         // Return the current value if we've already encountered this node.
         if (currentMap.containsKey(synset.getOffset())) {
-            return currentMap.containsKey(offset) ? currentMap.get(offset) : 0;
+            return currentMap.get(offset);
         }
 
         // Return the value from the text if the node has no hyponyms.
         if (hyponyms.isEmpty()) {
-            return offsetMap.containsKey(offset) ? offsetMap.get(offset) : 0;
+            float value = offsetMap.containsKey(offset) ? offsetMap.get(offset) : 0;
+
+            currentMap.put(offset, value);
+            return value;
         }
 
         float sum = 0;
@@ -233,9 +235,6 @@ public class ICCounter {
 
     /**
      * Finds compound terms from WordNet in the sentence and returns a version with them added..
-     *
-     * Will cause words to appear both as themselves and as parts of compounds. This is necessary because
-     * no disambiguation takes place here.
      * @param sentence
      * @return
      */
@@ -256,11 +255,14 @@ public class ICCounter {
                 // See if the compound exists in WordNet
                 if (compoundTerms.contains(candidateString)) {
                     // And add it to the result if so.
-                    result.add(candidateString);
+                    List<String> tmp = result.subList(0, left_ptr);
+                    tmp.add(candidateString);
+                    tmp.addAll(result.subList(right_ptr+2, result.size()));
+
+                    result = tmp;
                 }
             }
         }
-
         return result;
     }
 
@@ -270,7 +272,7 @@ public class ICCounter {
      */
     public void export(PrintWriter output) throws JWNLException {
         // Print a current version number
-        output.format("wnver::%f\n", JWNL.getVersion().getNumber());
+        output.format("wnver::%.1f\n", JWNL.getVersion().getNumber());
 
         // Output one POS tag at a time
         for (Map.Entry<String, HashMap<Long, Float>> posFreqMapEntry : offsetFreqMap.entrySet()) {
@@ -280,13 +282,15 @@ public class ICCounter {
             // Iterate through all of the words in this dictionary.
             for (Map.Entry<Long, Float> wordFreqEntry : posFreqMapEntry.getValue().entrySet()) {
                 long offset = wordFreqEntry.getKey();
-                Synset synset = dictionary.getSynsetAt(pos, offset);
+                if (offset != 0) { // Global roots are fictitious and don't get output.
+                    Synset synset = dictionary.getSynsetAt(pos, offset);
 
-                output.format("%d%s %f %s\n",
-                        wordFreqEntry.getKey(),
-                        posTag,
-                        wordFreqEntry.getValue(),
-                        pointerUtils.getDirectHypernyms(synset).isEmpty() ? "ROOT" : "");
+                    output.format("%d%s %f %s\n",
+                            offset,
+                            posTag,
+                            wordFreqEntry.getValue(),
+                            pointerUtils.getDirectHypernyms(synset).isEmpty() ? "ROOT" : "");
+                }
             }
         }
     }

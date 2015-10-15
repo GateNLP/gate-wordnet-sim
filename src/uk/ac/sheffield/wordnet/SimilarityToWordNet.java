@@ -55,18 +55,6 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
     @SuppressWarnings("unchecked")
     @Override
     public void execute() throws ExecutionException {
-
-//        runSimpleTest();
-//
-//        try {
-//            JWNL.initialize(wordnetConfig.openStream());
-//        } catch (IOException e) {
-//            throw new ExecutionException("Couldn't find or read WordNet configuration file",e);
-//        } catch (JWNLException e) {
-//            throw new ExecutionException("Couldn't initialise JWNL to read wordnet database", e);
-//        }
-//
-
         //create the similarity measure
         SimilarityMeasure sim;
         try {

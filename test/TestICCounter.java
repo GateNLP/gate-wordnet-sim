@@ -20,12 +20,12 @@ public class TestICCounter {
         BufferedReader br = new BufferedReader(new InputStreamReader(testCorpus));
 
         String line;
-        ICCounter testCounter = new ICCounter(false);
-
-        while ((line = br.readLine()) != null) {
+        ICCounter testCounter = new ICCounter(true);
+        line = br.readLine();
+        while (line != null) {
             String[] sentences = line.split("\\.");
             for (String sentence : sentences) {
-                String[] words = line.split("\\s");
+                String[] words = sentence.split("\\s");
 
                 List<String> sentenceWords = new LinkedList<String>();
                 for (String word : words) {
@@ -39,9 +39,11 @@ public class TestICCounter {
 
                 testCounter.countSentence(sentenceWords);
             }
+            line = br.readLine();
         }
 
         testCounter.propagateFrequency();
+//        testCounter.smoothFrequency();
         PrintWriter exportWriter = new PrintWriter(new FileOutputStream("test/test-java-ic.dat"));
         testCounter.export(exportWriter);
 
