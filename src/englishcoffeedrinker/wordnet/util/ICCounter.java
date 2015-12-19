@@ -226,7 +226,7 @@ public class ICCounter {
      * Create the structures to hold the offset frequencies.
      */
     protected void initFrequencies() {
-        offsetFreqMap = new TreeMap<>();
+        offsetFreqMap = new TreeMap<String, HashMap<Long, Float>>();
 
         for (String pos : POS_TAGS) {
             offsetFreqMap.put(pos, new HashMap<Long, Float>());
@@ -239,7 +239,7 @@ public class ICCounter {
      * @return
      */
     protected List<String> compoundify(List<String> sentence) {
-        List<String> result = new LinkedList<>(sentence);
+        List<String> result = new LinkedList<String>(sentence);
 
         // Use a left and right pointer to select subsets of the tokens and compare to the compounds.
         for (int left_ptr = 0; left_ptr < sentence.size(); left_ptr++) {
