@@ -1,5 +1,19 @@
 <CREOLE-DIRECTORY>
     <JAR SCAN="true">gate-wordnet-sim.jar</JAR>
-	<JAR>lib/jwnl.jar</JAR>
+	<JAR>lib/commons-logging.jar</JAR>
+	<JAR>lib/concurrentlinkedhashmap-lru-1.3.2.jar</JAR>
+	<JAR>lib/extjwnl-1.9.jar</JAR>
+	<JAR>lib/extjwnl-data-wn31-1.2.jar</JAR>
+	<JAR>lib/extjwnl-utilities-1.9.jar</JAR>
+	<JAR>lib/gate-core-8.0.jar</JAR>
+	<JAR>lib/hamcrest-core-1.3.jar</JAR>
+	<JAR>lib/junit-4.12.jar</JAR>
+	<JAR>lib/log4j-1.2.17.jar</JAR>
+	<JAR>lib/mysql-connector-java-5.1.35.jar</JAR>
+	<JAR>lib/postgresql-9.4-1201-jdbc41.jar</JAR>
+	<JAR>lib/slf4j-api-1.7.12.jar</JAR>
+	<JAR>lib/slf4j-log4j12-1.7.12.jar</JAR>
+	<JAR>lib/uio-license.txt</JAR>
 	<JAR>lib/uio.jar</JAR>
+
 </CREOLE-DIRECTORY>

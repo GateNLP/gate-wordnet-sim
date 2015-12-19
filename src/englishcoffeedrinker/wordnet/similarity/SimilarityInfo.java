@@ -12,10 +12,12 @@
 
 package englishcoffeedrinker.wordnet.similarity;
 
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.IndexWord;
-import net.didion.jwnl.data.Synset;
-import net.didion.jwnl.dictionary.Dictionary;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.IndexWord;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.dictionary.Dictionary;
+
+import java.util.List;
 
 /**
  * Simple encapsulation of the similarity between two synsets.
@@ -37,7 +39,7 @@ public class SimilarityInfo
 	 * @param sim the similarity between the two synsets
 	 * @throws JWNLException
 	 */
-	protected SimilarityInfo(String w1, Synset s1, String w2, Synset s2, double sim) throws JWNLException
+	protected SimilarityInfo(Dictionary dict, String w1, Synset s1, String w2, Synset s2, double sim) throws JWNLException
 	{
 		//store the synsets and the similarity between them
 		this.s1 = s1;
@@ -46,9 +48,6 @@ public class SimilarityInfo
 
 		//The following is just for display purposes and as this class
 		//is immutable we just generate this stuff once
-
-		//get access to WordNet
-		Dictionary dict = Dictionary.getInstance();
 
 		//get the two index words
 		iw1 = dict.getIndexWord(s1.getPOS(), w1.split("#")[0]);
@@ -76,13 +75,13 @@ public class SimilarityInfo
 		if (iw == null || s == null) return -1;
 
 		//get all the senses of the word
-		Synset[] senses = iw.getSenses();
+		List<Synset> senses = iw.getSenses();
 
-		for (int i = 0; i < senses.length; ++i)
+		for (int i = 0; i < senses.size(); ++i)
 		{
 			//if the sense we are looking at is the one we
 			//want then return it's index
-			if (senses[i].equals(s)) return (i + 1);
+			if (senses.get(i).equals(s)) return (i + 1);
 		}
 
 		//we didn't find the sense so return -1 to denote failure

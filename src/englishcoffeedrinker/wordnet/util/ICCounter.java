@@ -1,15 +1,16 @@
 package englishcoffeedrinker.wordnet.util;
 
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.*;
-import net.didion.jwnl.data.list.PointerTargetNode;
-import net.didion.jwnl.data.list.PointerTargetNodeList;
-import net.didion.jwnl.data.list.PointerTargetTree;
-import net.didion.jwnl.dictionary.Dictionary;
-import net.didion.jwnl.dictionary.file.DictionaryCatalog;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.*;
+import net.sf.extjwnl.data.list.PointerTargetNode;
+import net.sf.extjwnl.data.list.PointerTargetNodeList;
+import net.sf.extjwnl.data.list.PointerTargetTree;
+import net.sf.extjwnl.dictionary.Dictionary;
+import net.sf.extjwnl.dictionary.file.DictionaryCatalog;
 
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -21,7 +22,6 @@ public class ICCounter {
     private static String[] POS_TAGS = {"n", "v"};
     private static int MAX_COMPOUND_WORDS = 3;
     private final Dictionary dictionary;
-    private final PointerUtils pointerUtils;
 
     private boolean resnik;
     private HashSet<String> compoundTerms;
@@ -31,10 +31,9 @@ public class ICCounter {
      *
      * @param resnik Use the counting method of resnik et al in which IC is divided amongst all senses
      */
-    public ICCounter(boolean resnik) throws JWNLException {
+    public ICCounter(Dictionary dictionary, boolean resnik) throws JWNLException, IOException {
         this.resnik = resnik;
-        pointerUtils = PointerUtils.getInstance();
-        dictionary = Dictionary.getInstance();
+        this.dictionary = dictionary;
 
         offsetFreqMap = new TreeMap<String, HashMap<Long, Float>>();
 
@@ -126,7 +125,7 @@ public class ICCounter {
                 Synset synset = (Synset) synsetIterator.next();
 
                 // Only start with root nodes.
-                if (pointerUtils.getDirectHypernyms(synset).isEmpty()) {
+                if (PointerUtils.getDirectHypernyms(synset).isEmpty()) {
                     float frequency = _propagateFrequency(synset, offsetMap, resultOffsetMap);
                     resultOffsetMap.put(0l, resultOffsetMap.get(0l) + frequency);
                 }
@@ -167,7 +166,7 @@ public class ICCounter {
      * @throws JWNLException
      */
     private float _propagateFrequency(Synset synset, HashMap<Long, Float> offsetMap, HashMap<Long, Float> currentMap) throws JWNLException {
-        PointerTargetNodeList hyponyms = pointerUtils.getDirectHyponyms(synset);
+        PointerTargetNodeList hyponyms = PointerUtils.getDirectHyponyms(synset);
 
         long offset = synset.getOffset();
         // Return the current value if we've already encountered this node.
@@ -272,7 +271,7 @@ public class ICCounter {
      */
     public void export(PrintWriter output) throws JWNLException {
         // Print a current version number
-        output.format("wnver::%.1f\n", JWNL.getVersion().getNumber());
+        output.format("wnver::%.1f\n", dictionary.getVersion().getNumber());
 
         // Output one POS tag at a time
         for (Map.Entry<String, HashMap<Long, Float>> posFreqMapEntry : offsetFreqMap.entrySet()) {
@@ -289,7 +288,7 @@ public class ICCounter {
                             offset,
                             posTag,
                             wordFreqEntry.getValue(),
-                            pointerUtils.getDirectHypernyms(synset).isEmpty() ? "ROOT" : "");
+                            PointerUtils.getDirectHypernyms(synset).isEmpty() ? "ROOT" : "");
                 }
             }
         }

@@ -16,8 +16,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import net.didion.jwnl.data.Synset;
-import net.didion.jwnl.data.list.PointerTargetNode;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.data.list.PointerTargetNode;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 /**
  * An abstract class that adds path based methods to the top level similarity
@@ -43,8 +44,7 @@ public abstract class PathMeasure extends SimilarityMeasure
 	}
 
 	protected void config(Map<String, String> params) throws IOException
-	{
-		//A protected constructor to force the use of the newInstance method
+	{	//A protected constructor to force the use of the newInstance method
 		if (params.containsKey("root")) this.root = Boolean.parseBoolean(params.remove("root"));
 	}
 

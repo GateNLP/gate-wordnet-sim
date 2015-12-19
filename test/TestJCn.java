@@ -25,10 +25,10 @@ import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.data.IndexWord;
-import net.didion.jwnl.data.POS;
-import net.didion.jwnl.dictionary.Dictionary;
+
+import net.sf.extjwnl.data.IndexWord;
+import net.sf.extjwnl.data.POS;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,8 +50,8 @@ public class TestJCn
 		//Initialize WordNet - this must be done before you try
 		//and create a similarity measure otherwise nasty things
 		//might happen!
-		JWNL.initialize(new FileInputStream("test/wordnet.xml"));
-		
+		Dictionary dict = Dictionary.getInstance(new FileInputStream("test/wordnet.xml"));
+
 		//Create a map to hold the similarity config params
 		Map<String,String> params = new HashMap<String,String>();
 		
@@ -70,7 +70,7 @@ public class TestJCn
 		params.put("encoding", "us-ascii");
 		
 		//create the similarity measure
-		sim = SimilarityMeasure.newInstance(params);
+		sim = SimilarityMeasure.newInstance(dict, params);
 		
 	}
 	
@@ -78,12 +78,12 @@ public class TestJCn
 	public void test() throws Exception {
 		
 		//Get two words from WordNet
-		Dictionary dict = Dictionary.getInstance();		
+		Dictionary dict = Dictionary.getInstance(new FileInputStream("test/wordnet.xml"));
 		IndexWord word1 = dict.getIndexWord(POS.NOUN, "dog");
 		IndexWord word2 = dict.getIndexWord(POS.NOUN,"cat");
 		
 		//and get the similarity between the first senses of each word	
-		assertEquals(0.38732210985266985, sim.getSimilarity(word1.getSense(1), word2.getSense(1)), 0.00001);
+		assertEquals(0.38732210985266985, sim.getSimilarity(word1.getSenses().get(1), word2.getSenses().get(1)), 0.00001);
 	}
 	
 	@Test

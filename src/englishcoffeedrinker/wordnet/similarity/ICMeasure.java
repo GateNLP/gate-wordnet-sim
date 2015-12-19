@@ -22,14 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.POS;
-import net.didion.jwnl.data.Pointer;
-import net.didion.jwnl.data.PointerUtils;
-import net.didion.jwnl.data.Synset;
-import net.didion.jwnl.data.Word;
-import net.didion.jwnl.data.list.PointerTargetNode;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.POS;
+import net.sf.extjwnl.data.Pointer;
+import net.sf.extjwnl.data.PointerUtils;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.data.Word;
+import net.sf.extjwnl.data.list.PointerTargetNode;
+import net.sf.extjwnl.data.list.PointerTargetNodeList;
+import net.sf.extjwnl.dictionary.Dictionary;
 import org.omg.SendingContext.RunTime;
 
 /**
@@ -80,7 +81,7 @@ public abstract class ICMeasure extends PathMeasure
 
 			//Check that the IC file is meant for use with the version
 			//of WordNet we are currently using
-			if (!line.endsWith("::" + JWNL.getVersion().getNumber())) throw new IOException("InfoContent file version doesn't match WordNet version");
+			if (!line.endsWith("::" + dict.getVersion().getNumber())) throw new IOException("InfoContent file version doesn't match WordNet version");
 
 			//Initially set the IC values of the noun and verb roots to 0
 			freq.put("n", 0d);
@@ -213,10 +214,9 @@ public abstract class ICMeasure extends PathMeasure
 		//   2) Results in shortest path
 		//   3) Greatest depth (i.e. the LCS whose shortest path to root is longest)
 		//Although in here we only need the IC based one
+		@SuppressWarnings("unchecked") List<PointerTargetNodeList> trees1 = PointerUtils.getHypernymTree(s1).toList();
 
-		@SuppressWarnings("unchecked") List<List<PointerTargetNode>> trees1 = PointerUtils.getInstance().getHypernymTree(s1).toList();
-
-		@SuppressWarnings("unchecked") List<List<PointerTargetNode>> trees2 = PointerUtils.getInstance().getHypernymTree(s2).toList();
+		@SuppressWarnings("unchecked") List<PointerTargetNodeList> trees2 = PointerUtils.getHypernymTree(s2).toList();
 
 		Set<Synset> pLCS = new HashSet<Synset>();
 
@@ -271,8 +271,8 @@ public abstract class ICMeasure extends PathMeasure
 			//link the two synsets by a fake root node
 
 			//TODO: Should probably create one of these for each POS tag and cache them so that we can always return the same one
-			lcs = new Synset(s1.getPOS(), 0l, new Word[0], new Pointer[0], "", new java.util.BitSet());
-
+			//lcs = new Synset(s1.getPOS(), 0l, new Word[0], new Pointer[0], "", new java.util.BitSet());
+			lcs = new Synset(dict, s1.getPOS(), 0);
 		}
 
 		return lcs;

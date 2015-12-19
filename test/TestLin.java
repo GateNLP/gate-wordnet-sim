@@ -27,10 +27,9 @@ import java.util.Map;
 
 import englishcoffeedrinker.wordnet.similarity.ICMeasure;
 import englishcoffeedrinker.wordnet.similarity.Lin;
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.data.IndexWord;
-import net.didion.jwnl.data.POS;
-import net.didion.jwnl.dictionary.Dictionary;
+import net.sf.extjwnl.data.IndexWord;
+import net.sf.extjwnl.data.POS;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,14 +44,13 @@ import englishcoffeedrinker.wordnet.similarity.SimilarityMeasure;
 public class TestLin
 {
 	private static SimilarityMeasure sim;
-	
+	private static Dictionary dict;
 	@BeforeClass
 	public static void setUp() throws Exception {
 		
 		//Initialize WordNet - this must be done before you try
 		//and create a similarity measure otherwise nasty things
 		//might happen!
-		JWNL.initialize(new FileInputStream("test/wordnet.xml"));
 
 //
 //		//Create a map to hold the similarity config params
@@ -75,7 +73,9 @@ public class TestLin
 //      	sim = Lin.newInstance(params);
 
 		//create the similarity measure
-		Lin sim = new Lin();
+		dict = Dictionary.getInstance(new FileInputStream("test/wordnet.xml"));
+
+		Lin sim = new Lin(dict);
 
 		sim.loadMappings("file:test/domain_independent.txt", "us-ascii");
 		sim.loadInfoContent("file:test/ic-bnc-resnik-add1.dat", "us-ascii");
@@ -87,12 +87,12 @@ public class TestLin
 	public void test() throws Exception {
 		
 		//Get two words from WordNet
-		Dictionary dict = Dictionary.getInstance();		
 		IndexWord word1 = dict.getIndexWord(POS.NOUN, "dog");
 		IndexWord word2 = dict.getIndexWord(POS.NOUN,"cat");
 		
-		//and get the similarity between the first senses of each word	
-		assertEquals(0.8545616551173522, sim.getSimilarity(word1.getSense(1), word2.getSense(1)), 0.00001);
+		//and get the similarity between the first senses of each word
+		assertEquals(0.8545616551173522, sim.getSimilarity(word1.getSenses().get(0),
+				word2.getSenses().get(0)), 0.00001);
 	}
 
 	@Test

@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,11 +25,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.IndexWord;
-import net.didion.jwnl.data.POS;
-import net.didion.jwnl.data.Synset;
-import net.didion.jwnl.dictionary.Dictionary;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.IndexWord;
+import net.sf.extjwnl.data.POS;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 /**
  * An abstract notion of a similarity measure that all provided
@@ -48,6 +49,11 @@ public abstract class SimilarityMeasure
 	 * The maximum size the cache can grow to
 	 */
 	private int cacheSize = 5000;
+
+	/**
+	*  The JWNL dictionary to use for the instance.
+	*/
+	protected Dictionary dict;
 
 	/**
 	 * To speed up computation of the similarity between two synsets
@@ -113,7 +119,7 @@ public abstract class SimilarityMeasure
 	 * @throws Exception if an error occurs while creating the similarity
 	 *         measure.
 	 */
-	public static SimilarityMeasure newInstance(URL confURL) throws Exception
+	public static SimilarityMeasure newInstance(Dictionary dict, URL confURL) throws Exception
 	{
 		//create map to hold the key-value pairs we are going to read from
 		//the configuration file
@@ -164,7 +170,7 @@ public abstract class SimilarityMeasure
 
 		//create and return a new instance of the similarity measure specified
 		//by the config file
-		return newInstance(params);
+		return newInstance(dict, params);
 	}
 
 	/**
@@ -177,7 +183,7 @@ public abstract class SimilarityMeasure
 	 * @throws IOException if the wordnet configuration file could not be read.
 	 * @throws RuntimeException if the additional mappings could not be added to the wordnet database.
 	 */
-	public static SimilarityMeasure newInstance(Map<String, String> params) throws IllegalArgumentException,
+	public static SimilarityMeasure newInstance(Dictionary dict, Map<String, String> params) throws IllegalArgumentException,
 			IOException {
 		//get the class name of the implementation we need to load
 		String name = params.remove("simType");
@@ -190,14 +196,19 @@ public abstract class SimilarityMeasure
 		try {
 			@SuppressWarnings("unchecked") Class<SimilarityMeasure> c = (Class<SimilarityMeasure>) Class.forName(name);
 			//create a new instance of the similarity measure
-			sim = c.newInstance();
+			sim = c.getDeclaredConstructor(Dictionary.class).newInstance(dict);
 		} catch (ClassNotFoundException e) {
 			throw new IllegalArgumentException("Could not find class supplied by name for similarity measure.",e);
 		} catch (InstantiationException e) {
 			throw new IllegalArgumentException("Could not instantiate class for similarity measure", e);
 		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException("Couldn't access class for similarity measure.", e);
+		} catch (NoSuchMethodException e) {
+			throw new IllegalArgumentException("Class for similarity measure does not accept dictionary.", e);
+		} catch (InvocationTargetException e) {
+			throw new IllegalArgumentException("Class for similarity measure does not accept dictionary", e);
 		}
+
 
 		// Set the size of the cache for the similarity measure
 		String cSizeString = params.remove("cache");
@@ -308,7 +319,7 @@ public abstract class SimilarityMeasure
 					//if the similarity is better than we have seen before
 					//then create and store an info object describing the
 					//similarity between the two synsets
-					sim = new SimilarityInfo(w1, s1, w2, s2, score);
+					sim = new SimilarityInfo(dict, w1, s1, w2, s2, score);
 				}
 			}
 		}
@@ -365,9 +376,6 @@ public abstract class SimilarityMeasure
 			return new HashSet<Synset>();
 		}
 
-		//get a handle on the WordNet dictionary
-		Dictionary dict = Dictionary.getInstance();
-
 		//create an emptuy set to hold any synsets we find
 		Set<Synset> synsets = new HashSet<Synset>();
 
@@ -385,7 +393,7 @@ public abstract class SimilarityMeasure
 			{
 				//for each matching word in WordNet add all it's senses to
 				//the set we are building up
-				synsets.addAll(Arrays.asList(iw.getSenses()));
+				synsets.addAll(iw.getSenses());
 			}
 		} else { // Word is a POS expression and must be split.
 			//if the word is in the domainMappings then simply return the mappings
@@ -403,11 +411,11 @@ public abstract class SimilarityMeasure
 			if (data.length > 2) {
 				//if the calling method specified a sense index then
 				//add just that sysnet to the set we are creating
-				synsets.add(iw.getSense(Integer.parseInt(data[2])));
+				synsets.add(iw.getSenses().get(Integer.parseInt(data[2]) - 1));
 			} else {
 				//no sense index was specified so add all the senses of
 				//the word to the set we are creating
-				synsets.addAll(Arrays.asList(iw.getSenses()));
+				synsets.addAll(iw.getSenses());
 			}
 		}
 

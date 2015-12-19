@@ -12,8 +12,9 @@
 
 package englishcoffeedrinker.wordnet.similarity;
 
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.Synset;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 /**
  * An implementation of the WordNet similarity measure developed by Jiang and
@@ -29,9 +30,10 @@ public class JCn extends ICMeasure
 	 * Instances of this similarity measure should be generated using the
 	 * factory methods of {@link SimilarityMeasure}.
 	 */
-	public JCn()
+	public JCn(Dictionary dict)
 	{
-		//A protected constructor to force the use of the newInstance method
+		this.dict = dict;
+
 	}
 
 	@Override

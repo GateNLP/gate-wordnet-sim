@@ -12,9 +12,9 @@ import gate.creole.metadata.CreoleResource;
 import gate.creole.metadata.RunTime;
 import gate.creole.metadata.Optional;
 import gate.creole.ExecutionException;
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.Synset;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -38,11 +38,12 @@ import static org.junit.Assert.assertNotNull;
 public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         ProcessingResource {
 
+    private Dictionary dict;
 
     @Override
     public Resource init() throws ResourceInstantiationException {
         try {
-            JWNL.initialize(wordnetConfig.openStream());
+            dict = Dictionary.getInstance(wordnetConfig.openStream());
         } catch (IOException e) {
             throw new ResourceInstantiationException("Couldn't find or read WordNet configuration file",e);
         } catch (JWNLException e) {
@@ -58,7 +59,7 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         //create the similarity measure
         SimilarityMeasure sim;
         try {
-            sim = SimilarityMeasure.newInstance(getSimParams());
+            sim = SimilarityMeasure.newInstance(dict, getSimParams());
         } catch (IOException e) {
             throw new ExecutionException(e);
         }
@@ -126,9 +127,10 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
 
     public void runSimpleTest() throws ExecutionException {
         try {
-            JWNL.initialize(new FileInputStream("/home/dominic/Repositories/gate-wordnet-sim/test/wordnet.xml"));
+            Dictionary dict = Dictionary.getInstance(
+                    new FileInputStream("/home/dominic/Repositories/gate-wordnet-sim/test/wordnet.xml"));
 
-            Lin sim = new Lin();
+            Lin sim = new Lin(dict);
 
 
             sim.loadMappings("file:/home/dominic/Repositories/gate-wordnet-sim/test/domain_independent.txt", "us-ascii");

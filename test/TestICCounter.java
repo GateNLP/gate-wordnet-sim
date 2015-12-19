@@ -1,6 +1,6 @@
 import englishcoffeedrinker.wordnet.util.ICCounter;
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.JWNLException;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 import java.io.*;
 import java.util.LinkedList;
@@ -13,14 +13,14 @@ import java.util.List;
  */
 public class TestICCounter {
     public static void main(String[] args) throws IOException, JWNLException {
-        JWNL.initialize(new FileInputStream("test/wordnet.xml"));
+        Dictionary dict = Dictionary.getInstance(new FileInputStream("test/wordnet.xml"));
 
         FileInputStream testCorpus = new FileInputStream("test/test-ic-corpus.txt");
 
         BufferedReader br = new BufferedReader(new InputStreamReader(testCorpus));
 
         String line;
-        ICCounter testCounter = new ICCounter(true);
+        ICCounter testCounter = new ICCounter(dict, true);
         line = br.readLine();
         while (line != null) {
             String[] sentences = line.split("\\.");
