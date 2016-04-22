@@ -43,6 +43,10 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
     @Override
     public Resource init() throws ResourceInstantiationException {
         try {
+            if (wordnetConfig == null) {
+                throw new NullPointerException("WordNet configuration URL is null.");
+            }
+
             dict = Dictionary.getInstance(wordnetConfig.openStream());
         } catch (IOException e) {
             throw new ResourceInstantiationException("Couldn't find or read WordNet configuration file",e);
