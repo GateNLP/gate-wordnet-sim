@@ -38,10 +38,9 @@ import static org.junit.Assert.assertNotNull;
 public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         ProcessingResource {
 
-    private Dictionary dict;
+    private Dictionary dict = null;
 
-    @Override
-    public Resource init() throws ResourceInstantiationException {
+    private void initDictionary() throws ExecutionException {
         try {
             if (wordnetConfig == null) {
                 throw new NullPointerException("WordNet configuration URL is null.");
@@ -49,17 +48,19 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
 
             dict = Dictionary.getInstance(wordnetConfig.openStream());
         } catch (IOException e) {
-            throw new ResourceInstantiationException("Couldn't find or read WordNet configuration file",e);
+            throw new ExecutionException("Couldn't find or read WordNet configuration file",e);
         } catch (JWNLException e) {
-            throw new ResourceInstantiationException("Couldn't initialise JWNL to read wordnet database", e);
+            throw new ExecutionException("Couldn't initialise JWNL to read wordnet database", e);
         }
-
-        return super.init();
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public void execute() throws ExecutionException {
+        if (dict == null) {
+            initDictionary();
+        }
+
         //create the similarity measure
         SimilarityMeasure sim;
         try {
@@ -264,6 +265,7 @@ public class SimilarityToWordNet extends AbstractLanguageAnalyser implements
         return wordnetConfig;
     }
 
+    @RunTime
     @CreoleParameter(comment = "Location of the wordnet configuration file")
     public void setWordnetConfig(URL wordnetConfig) {
         this.wordnetConfig = wordnetConfig;
